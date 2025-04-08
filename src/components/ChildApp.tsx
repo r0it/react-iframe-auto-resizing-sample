@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import useIframeContentResize from '../hooks/useIframeContentResize';
 import '../styles/ChildApp.css';
 
 // Type definition for the content item
@@ -10,9 +11,12 @@ interface ContentItem {
 
 const ChildApp = () => {
   const [content, setContent] = useState<ContentItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const contentRef = useRef<HTMLDivElement>(null);
+  
+  // Use our custom hook for iframe content resizing
+  const { contentRef, loading, setLoading } = useIframeContentResize({
+    initialLoading: true
+  });
   
   // Simulate fetching data with a delay to demonstrate dynamic content loading
   useEffect(() => {
@@ -40,45 +44,7 @@ const ChildApp = () => {
     };
     
     fetchData();
-  }, []);
-  
-  // Function to notify parent about height changes
-  const notifyParentAboutHeight = useCallback(() => {
-    if (contentRef.current) {
-      const height = contentRef.current.scrollHeight;
-      // Send message to parent with the current height
-      window.parent.postMessage({ type: 'resize', height }, '*');
-    }
-  }, []);
-  
-  // Set up resize observer to detect content changes
-  useEffect(() => {
-    if (!contentRef.current) return;
-    
-    // Create ResizeObserver to monitor size changes
-    const resizeObserver = new ResizeObserver(() => {
-      notifyParentAboutHeight();
-    });
-    
-    // Start observing the content element
-    resizeObserver.observe(contentRef.current);
-    
-    // Initial height notification
-    notifyParentAboutHeight();
-    
-    // Clean up observer on unmount
-    return () => {
-      if (contentRef.current) {
-        resizeObserver.unobserve(contentRef.current);
-      }
-      resizeObserver.disconnect();
-    };
-  }, [notifyParentAboutHeight]);
-  
-  // Also notify parent when content changes
-  useEffect(() => {
-    notifyParentAboutHeight();
-  }, [content, notifyParentAboutHeight]);
+  }, [setLoading]);
   
   // Load more content button handler
   const handleLoadMore = () => {

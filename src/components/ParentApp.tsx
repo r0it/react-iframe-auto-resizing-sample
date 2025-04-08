@@ -1,47 +1,14 @@
-import { useState, useRef, useCallback, useEffect, memo } from 'react';
+import { memo } from 'react';
+import useIframeResize from '../hooks/useIframeResize';
 import '../styles/ParentApp.css';
 
-// Type definitions for message events
-interface IframeMessage {
-  type: 'resize';
-  height: number;
-}
-
 // Memoized IFrame component to prevent unnecessary re-renders
-const ChildIframe = memo(({ url, title, onResize }: { 
+const ChildIframe = memo(({ url, title, iframeRef, onResize }: { 
   url: string; 
   title: string; 
+  iframeRef: React.RefObject<HTMLIFrameElement>;
   onResize: (height: number) => void;
 }) => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-
-  // Handle messages from the iframe
-  const handleMessage = useCallback((event: MessageEvent) => {
-    // Security check: only accept messages from our iframe's URL
-    // Use window.location.origin as base for relative URLs
-    const iframeUrl = new URL(url, window.location.origin);
-    if (event.origin !== iframeUrl.origin) return;
-
-    try {
-      const data = event.data as IframeMessage;
-      
-      // Handle resize message
-      if (data.type === 'resize' && typeof data.height === 'number') {
-        onResize(data.height);
-      }
-    } catch (error) {
-      console.error('Error processing message from iframe:', error);
-    }
-  }, [url, onResize]);
-
-  // Set up and clean up event listener
-  useEffect(() => {
-    window.addEventListener('message', handleMessage);
-    return () => {
-      window.removeEventListener('message', handleMessage);
-    };
-  }, [handleMessage]);
-
   return (
     <iframe
       ref={iframeRef}
@@ -57,15 +24,11 @@ const ChildIframe = memo(({ url, title, onResize }: {
 ChildIframe.displayName = 'ChildIframe';
 
 const ParentApp = () => {
-  const [iframeHeight, setIframeHeight] = useState(300); // Default height
-  const [loading, setLoading] = useState(true);
-
-  // Handle iframe resize
-  const handleIframeResize = useCallback((height: number) => {
-    setIframeHeight(height);
-    // Ensure loading is set to false when we receive a resize message
-    setLoading(false);
-  }, []);
+  // Use our custom hook for iframe resizing
+  const { iframeRef, iframeHeight, loading, handleIframeResize } = useIframeResize({
+    url: '/child',
+    defaultHeight: 300
+  });
 
   return (
     <div className="parent-container">
@@ -77,6 +40,7 @@ const ParentApp = () => {
         <ChildIframe 
           url="/child" 
           title="Child Application" 
+          iframeRef={iframeRef}
           onResize={handleIframeResize} 
         />
       </div>
