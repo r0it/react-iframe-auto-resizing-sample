@@ -1,54 +1,107 @@
-# React + TypeScript + Vite
+# React Iframe Auto-Resize Sample
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This project demonstrates an optimized approach to automatically resize iframes based on their content using React and TypeScript. It showcases a parent-child iframe relationship where the iframe's height dynamically adjusts to fit its content without scrollbars or cutoffs.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Automatic iframe resizing** - Iframe height adjusts dynamically as content changes
+- **Bidirectional communication** - Secure postMessage API for parent-child communication
+- **Loading state management** - Visual feedback during content loading
+- **TypeScript support** - Full type safety throughout the application
+- **Performance optimized** - Uses ResizeObserver and memoization for efficient updates
+- **Responsive design** - Works across different screen sizes
 
-## Expanding the ESLint configuration
+## Demo
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+The application consists of two main components:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+1. **Parent Application** - Contains the iframe and displays its current height
+2. **Child Application** - The content inside the iframe that can dynamically change
+
+When you click "Load More Content" in the child application, the iframe automatically resizes to accommodate the new content.
+
+## Installation
+
+```bash
+# Clone the repository
+git clone [repository-url]
+cd react-iframe-sample
+
+# Install dependencies
+npm install
+
+# Start the development server
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## How It Works
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+The auto-resizing functionality is implemented using two custom hooks:
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+### 1. useIframeResize (Parent Hook)
+
+This hook is used in the parent component that contains the iframe. It:
+
+- Sets up event listeners for messages from the child iframe
+- Updates the iframe height based on messages received
+- Manages loading state
+- Implements security checks for message origin
+
+```typescript
+const { iframeRef, iframeHeight, loading, handleIframeResize } = useIframeResize({
+  url: '/child',
+  defaultHeight: 300
+});
 ```
+
+### 2. useIframeContentResize (Child Hook)
+
+This hook is used in the child component inside the iframe. It:
+
+- Uses ResizeObserver to detect content size changes
+- Sends height information to the parent via postMessage
+- Manages loading state for dynamic content
+- Ensures height updates after content changes
+
+```typescript
+const { contentRef, loading, setLoading } = useIframeContentResize({
+  initialLoading: true
+});
+```
+
+## Technical Implementation
+
+### Communication Mechanism
+
+The parent and child communicate using the browser's `postMessage` API:
+
+1. The child component measures its content height using a ResizeObserver
+2. When content changes, it sends a message to the parent with the new height
+3. The parent receives the message, verifies its origin, and updates the iframe height
+
+### Optimization Techniques
+
+- **ResizeObserver** - Modern API that efficiently detects size changes without polling
+- **Memoization** - The iframe component is memoized to prevent unnecessary re-renders
+- **Lazy Loading** - Components are loaded lazily for better initial load performance
+- **Debounced Updates** - Height updates are slightly delayed to ensure content is fully rendered
+- **Origin Verification** - Security check to only accept messages from trusted sources
+
+### Best Practices
+
+- **Type Safety** - Comprehensive TypeScript interfaces for all props and state
+- **Clean Separation** - Logic extracted into reusable hooks
+- **Error Handling** - Proper error boundaries and fallbacks
+- **Performance** - Optimized rendering and event handling
+- **Security** - Proper sandbox attributes and origin verification
+
+## Use Cases
+
+- Embedding dynamic content from the same domain
+- Creating isolated components that need to fit their content
+- Building embedded widgets or tools
+- Implementing content previews
+
+## License
+
+MIT
