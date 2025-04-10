@@ -100,6 +100,30 @@ const ParentApp = () => {
       <h1>Parent Application</h1>
       <p>This demonstrates multiple iframes with auto-resizing when content changes.</p>
       
+      <div className="controls-panel">
+        <h3>Message Controls</h3>
+        <button
+          onClick={() => {
+            broadcastMessage({
+              type: 'action',
+              action: 'clear'
+            });
+          }}
+        >
+          Clear All Iframes
+        </button>
+        <button
+          onClick={() => {
+            broadcastMessage({
+              type: 'data',
+              payload: { message: 'Hello from parent!' }
+            });
+          }}
+        >
+          Broadcast Hello
+        </button>
+      </div>
+      
       {iframeHooks.map(({ config, hook }) => {
         const { iframeRef, iframeHeight, loading, handleIframeResize } = hook;
         
@@ -109,6 +133,28 @@ const ParentApp = () => {
             marginBottom: '20px'
           }}>
             <h2>{config.title}</h2>
+            <div className="iframe-controls">
+              <button
+                onClick={() => {
+                  sendMessage(config.id, {
+                    type: 'action',
+                    action: 'clear'
+                  });
+                }}
+              >
+                Clear Content
+              </button>
+              <button
+                onClick={() => {
+                  sendMessage(config.id, {
+                    type: 'data',
+                    payload: { message: `Hello ${config.title}!` }
+                  });
+                }}
+              >
+                Send Hello
+              </button>
+            </div>
             {loading && <div className="loading-indicator">Loading iframe content...</div>}
             <ChildIframe 
               url={config.url} 
