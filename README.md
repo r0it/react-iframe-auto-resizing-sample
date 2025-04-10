@@ -6,6 +6,7 @@ This project demonstrates an optimized approach to automatically resize iframes 
 
 - **Automatic iframe resizing** - Iframe height adjusts dynamically as content changes
 - **Bidirectional communication** - Secure postMessage API for parent-child communication
+- **Multiple iframe support** - Isolated communication channels for multiple iframes
 - **Loading state management** - Visual feedback during content loading
 - **TypeScript support** - Full type safety throughout the application
 - **Performance optimized** - Uses ResizeObserver and memoization for efficient updates
@@ -50,7 +51,8 @@ This hook is used in the parent component that contains the iframe. It:
 ```typescript
 const { iframeRef, iframeHeight, loading, handleIframeResize } = useIframeResize({
   url: '/child',
-  defaultHeight: 300
+  defaultHeight: 300,
+  channelId: 'unique-iframe-id'  // Optional: for multiple iframe support
 });
 ```
 
@@ -65,7 +67,8 @@ This hook is used in the child component inside the iframe. It:
 
 ```typescript
 const { contentRef, loading, setLoading } = useIframeContentResize({
-  initialLoading: true
+  initialLoading: true,
+  channelId: 'unique-iframe-id'  // Optional: for multiple iframe support
 });
 ```
 
@@ -78,6 +81,44 @@ The parent and child communicate using the browser's `postMessage` API:
 1. The child component measures its content height using a ResizeObserver
 2. When content changes, it sends a message to the parent with the new height
 3. The parent receives the message, verifies its origin, and updates the iframe height
+
+### Multiple Iframe Support
+
+The application supports multiple iframes with isolated communication channels:
+
+1. Each iframe is assigned a unique `channelId` to identify its messages
+2. The parent component passes the `channelId` to both the iframe URL and the resize hook
+3. The child component extracts the `channelId` from URL parameters
+4. Messages include the `channelId` to ensure they're processed by the correct parent-child pair
+
+```typescript
+// Parent component setup
+const iframeConfigs = [
+  { id: 'iframe1', url: '/child', title: 'Child Application 1' },
+  { id: 'iframe2', url: '/child', title: 'Child Application 2' },
+];
+
+// Create a hook instance for each iframe
+const iframeHooks = iframeConfigs.map(config => ({
+  config,
+  hook: useIframeResize({
+    url: config.url,
+    defaultHeight: 300,
+    channelId: config.id  // Pass unique channel ID
+  })
+}));
+```
+
+```typescript
+// Child component setup
+const [searchParams] = useSearchParams();
+const channelId = searchParams.get('channelId');
+
+const { contentRef, loading, setLoading } = useIframeContentResize({
+  initialLoading: true,
+  channelId: channelId || undefined  // Use channel ID from URL
+});
+```
 
 ### Optimization Techniques
 

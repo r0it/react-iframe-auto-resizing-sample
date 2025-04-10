@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import useIframeContentResize from '../hooks/useIframeContentResize';
 import '../styles/ChildApp.css';
+import { useSearchParams } from 'react-router-dom';
 
 // Type definition for the content item
 interface ContentItem {
@@ -13,9 +14,14 @@ const ChildApp = () => {
   const [content, setContent] = useState<ContentItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   
+  // Get channelId from URL parameters
+  const [searchParams] = useSearchParams();
+  const channelId = searchParams.get('channelId');
+  
   // Use our custom hook for iframe content resizing
   const { contentRef, loading, setLoading } = useIframeContentResize({
-    initialLoading: true
+    initialLoading: true,
+    channelId: channelId || undefined
   });
   
   // Simulate fetching data with a delay to demonstrate dynamic content loading
@@ -65,7 +71,7 @@ const ChildApp = () => {
   
   return (
     <div className="child-container" ref={contentRef}>
-      <h1>Child Application</h1>
+      <h1>Child Application {channelId ? `(${channelId})` : ''}</h1>
       <p className="description">
         This is the content inside the iframe. As this content grows or shrinks, 
         the iframe will automatically resize to fit it perfectly.

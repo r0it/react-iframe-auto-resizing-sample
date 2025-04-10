@@ -11,6 +11,8 @@ interface UseIframeContentResizeOptions {
   initialLoading?: boolean;
   /** Target origin for postMessage (default: '*') */
   targetOrigin?: string;
+  /** Channel ID for identifying specific parent-child communication */
+  channelId?: string;
 }
 
 interface UseIframeContentResizeReturn {
@@ -24,7 +26,8 @@ interface UseIframeContentResizeReturn {
 
 const useIframeContentResize = ({
   initialLoading = false,
-  targetOrigin = '*'
+  targetOrigin = '*',
+  channelId
 }: UseIframeContentResizeOptions = {}): UseIframeContentResizeReturn => {
   const contentRef = useRef<HTMLDivElement>(null);
   const [loading, setLoading] = useState(initialLoading);
@@ -33,10 +36,10 @@ const useIframeContentResize = ({
   const notifyParentAboutHeight = useCallback(() => {
     if (contentRef.current) {
       const height = contentRef.current.scrollHeight;
-      // Send message to parent with the current height
-      window.parent.postMessage({ type: 'resize', height }, targetOrigin);
+      // Send message to parent with the current height and channelId for identification
+      window.parent.postMessage({ type: 'resize', height, channelId }, targetOrigin);
     }
-  }, [targetOrigin]);
+  }, [targetOrigin, channelId]);
   
   // Set up resize observer to detect content changes
   useEffect(() => {

@@ -4,11 +4,13 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 interface IframeMessage {
   type: 'resize';
   height: number;
+  channelId?: string;
 }
 
 interface UseIframeResizeProps {
   url: string;
   defaultHeight?: number;
+  channelId?: string;
 }
 
 interface UseIframeResizeReturn {
@@ -25,7 +27,8 @@ interface UseIframeResizeReturn {
  * @param defaultHeight - Default height for the iframe (default: 300)
  * @returns Object containing iframe reference, current height, loading state, and resize handler
  */
-const useIframeResize = ({ url, defaultHeight = 300 }: UseIframeResizeProps): UseIframeResizeReturn => {
+const useIframeResize = (props: UseIframeResizeProps): UseIframeResizeReturn => {
+  const { url, defaultHeight = 300, channelId } = props;
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [iframeHeight, setIframeHeight] = useState(defaultHeight);
   const [loading, setLoading] = useState(true);
@@ -49,12 +52,16 @@ const useIframeResize = ({ url, defaultHeight = 300 }: UseIframeResizeProps): Us
       
       // Handle resize message
       if (data.type === 'resize' && typeof data.height === 'number') {
+        // If channelId is specified, only process messages for this channel
+        if (props.channelId && data.channelId !== props.channelId) {
+          return;
+        }
         handleIframeResize(data.height);
       }
     } catch (error) {
       console.error('Error processing message from iframe:', error);
     }
-  }, [url, handleIframeResize]);
+  }, [url, handleIframeResize, props.channelId]);
 
   // Set up and clean up event listener
   useEffect(() => {
