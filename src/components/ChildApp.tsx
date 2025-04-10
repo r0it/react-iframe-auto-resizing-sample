@@ -19,10 +19,31 @@ const ChildApp = () => {
   const channelId = searchParams.get('channelId');
   
   // Use our custom hook for iframe content resizing
-  const { contentRef, loading, setLoading } = useIframeContentResize({
+  const { contentRef, loading, setLoading, sendMessage, onMessage } = useIframeContentResize({
     initialLoading: true,
     channelId: channelId || undefined
   });
+
+  // Handle messages from parent
+  useEffect(() => {
+    const unsubscribe = onMessage((message) => {
+      console.log('Received message from parent:', message);
+      
+      if (message.type === 'action') {
+        switch (message.action) {
+          case 'clear':
+            setContent([]);
+            break;
+          // Add more action handlers as needed
+        }
+      } else if (message.type === 'data') {
+        // Handle data messages
+        console.log('Received data:', message.payload);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [onMessage]);
   
   // Simulate fetching data with a delay to demonstrate dynamic content loading
   useEffect(() => {
@@ -66,6 +87,12 @@ const ChildApp = () => {
       
       setContent(prev => [...prev, newItem]);
       setLoading(false);
+
+      // Notify parent about the new content
+      sendMessage({
+        type: 'data',
+        payload: { newItem }
+      });
     }, 800);
   };
   

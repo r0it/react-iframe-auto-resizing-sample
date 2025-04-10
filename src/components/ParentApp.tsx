@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import useIframeResize from '../hooks/useIframeResize';
 import '../styles/ParentApp.css';
 
@@ -7,6 +7,18 @@ interface IframeConfig {
   id: string;
   url: string;
   title: string;
+}
+
+// Message type definitions
+interface DataMessage {
+  type: 'data';
+  payload: any;
+}
+
+interface ActionMessage {
+  type: 'action';
+  action: string;
+  payload?: any;
 }
 
 // Memoized IFrame component to prevent unnecessary re-renders
@@ -49,6 +61,39 @@ const ParentApp = () => {
       })
     };
   });
+
+  // Handle messages from child iframes
+  const handleMessage = useCallback((message: DataMessage | ActionMessage, channelId: string) => {
+    console.log(`Received message from ${channelId}:`, message);
+    
+    if (message.type === 'action') {
+      switch (message.action) {
+        case 'refresh':
+          // Handle refresh action
+          console.log(`Refreshing iframe ${channelId}`);
+          break;
+        // Add more action handlers as needed
+      }
+    } else if (message.type === 'data') {
+      // Handle data messages
+      console.log(`Received data from ${channelId}:`, message.payload);
+    }
+  }, []);
+
+  // Send message to a specific child iframe
+  const sendMessage = useCallback((channelId: string, message: Omit<DataMessage | ActionMessage, 'channelId'>) => {
+    const iframe = iframeHooks.find(({ config }) => config.id === channelId);
+    if (iframe?.hook.sendMessage) {
+      iframe.hook.sendMessage(message);
+    }
+  }, [iframeHooks]);
+
+  // Example: Send a message to all iframes
+  const broadcastMessage = useCallback((message: Omit<DataMessage | ActionMessage, 'channelId'>) => {
+    iframeHooks.forEach(({ config }) => {
+      sendMessage(config.id, message);
+    });
+  }, [sendMessage]);
 
   return (
     <div className="parent-container">

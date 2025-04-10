@@ -5,7 +5,7 @@ This project demonstrates an optimized approach to automatically resize iframes 
 ## Features
 
 - **Automatic iframe resizing** - Iframe height adjusts dynamically as content changes
-- **Bidirectional communication** - Secure postMessage API for parent-child communication
+- **Advanced Messaging System** - Rich messaging API supporting data sharing and action triggers
 - **Multiple iframe support** - Isolated communication channels for multiple iframes
 - **Loading state management** - Visual feedback during content loading
 - **TypeScript support** - Full type safety throughout the application
@@ -76,11 +76,50 @@ const { contentRef, loading, setLoading } = useIframeContentResize({
 
 ### Communication Mechanism
 
-The parent and child communicate using the browser's `postMessage` API:
+The parent and child communicate using an enhanced `postMessage` API that supports multiple message types:
 
-1. The child component measures its content height using a ResizeObserver
-2. When content changes, it sends a message to the parent with the new height
-3. The parent receives the message, verifies its origin, and updates the iframe height
+#### Message Types
+
+1. **Resize Messages** - Automatic height adjustment:
+   - Child measures content height using ResizeObserver
+   - Sends height information to parent
+   - Parent verifies and updates iframe height
+
+2. **Data Messages** - Share data between parent and child:
+   ```typescript
+   // From child to parent
+   sendMessage({
+     type: 'data',
+     payload: { /* your data */ }
+   });
+
+   // From parent to specific child
+   sendMessage(channelId, {
+     type: 'data',
+     payload: { /* your data */ }
+   });
+   ```
+
+3. **Action Messages** - Trigger specific behaviors:
+   ```typescript
+   // From parent to child
+   sendMessage(channelId, {
+     type: 'action',
+     action: 'clear'
+   });
+
+   // From child to parent
+   sendMessage({
+     type: 'action',
+     action: 'refresh'
+   });
+   ```
+
+#### Message Handling
+
+- Parent and child components can subscribe to messages using the `onMessage` callback
+- Messages are automatically filtered by channelId for multiple iframe support
+- Type-safe message handling with TypeScript interfaces
 
 ### Multiple Iframe Support
 
