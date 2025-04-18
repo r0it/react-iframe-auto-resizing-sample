@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import useIframeContentResize from '../hooks/useIframeContentResize';
+import { SharedStateProvider, useSharedState } from '../context/SharedStateContext';
 import '../styles/ChildApp.css';
 import { useSearchParams } from 'react-router-dom';
 
@@ -10,7 +11,8 @@ interface ContentItem {
   content: string;
 }
 
-const ChildApp = () => {
+const ChildAppContent = () => {
+  const { state, updateState } = useSharedState();
   const [content, setContent] = useState<ContentItem[]>([]);
   const [error, setError] = useState<string | null>(null);
   
@@ -98,6 +100,23 @@ const ChildApp = () => {
   
   return (
     <div className="child-container" ref={contentRef}>
+      <div className="shared-state-panel">
+        <h2>Shared State</h2>
+        <p>Counter: {state.data.counter || 0}</p>
+        <p>Message: {state.data.message || 'No message'}</p>
+        <button
+          onClick={() => updateState('counter', (state.data.counter || 0) + 1)}
+          className="state-button"
+        >
+          Increment Counter
+        </button>
+        <button
+          onClick={() => updateState('message', `Hello from ${channelId} at ${new Date().toLocaleTimeString()}`)}
+          className="state-button"
+        >
+          Update Message
+        </button>
+      </div>
       <h1>Child Application {channelId ? `(${channelId})` : ''}</h1>
       <p className="description">
         This is the content inside the iframe. As this content grows or shrinks, 
@@ -125,6 +144,14 @@ const ChildApp = () => {
         {loading ? 'Loading...' : 'Load More Content'}
       </button>
     </div>
+  );
+};
+
+const ChildApp = () => {
+  return (
+    <SharedStateProvider>
+      <ChildAppContent />
+    </SharedStateProvider>
   );
 };
 

@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import useIframeResize from '../hooks/useIframeResize';
+import { SharedStateProvider, useSharedState } from '../context/SharedStateContext';
 import '../styles/ParentApp.css';
 
 // Define iframe configuration type
@@ -44,6 +45,15 @@ const ChildIframe = memo(({ url, title, iframeRef, onResize, channelId }: {
 ChildIframe.displayName = 'ChildIframe';
 
 const ParentApp = () => {
+  return (
+    <SharedStateProvider isParent={true}>
+      <ParentAppContent />
+    </SharedStateProvider>
+  );
+};
+
+const ParentAppContent = () => {
+  const { state, updateState, clearState } = useSharedState();
   // Define multiple iframe configurations
   const iframeConfigs: IframeConfig[] = [
     { id: 'iframe1', url: '/child', title: 'Child Application 1' },
@@ -108,6 +118,7 @@ const ParentApp = () => {
               type: 'action',
               action: 'clear'
             });
+            clearState();
           }}
         >
           Clear All Iframes
@@ -122,6 +133,29 @@ const ParentApp = () => {
         >
           Broadcast Hello
         </button>
+        <div className="shared-state-controls">
+          <h3>Shared State Controls</h3>
+          <button
+            onClick={() => {
+              updateState('counter', (state.data.counter || 0) + 1);
+            }}
+          >
+            Increment Counter
+          </button>
+          <button
+            onClick={() => {
+              updateState('message', `Updated from parent at ${new Date().toLocaleTimeString()}`);
+            }}
+          >
+            Update Message
+          </button>
+          <div className="state-display">
+            <p>Counter: {state.data.counter || 0}</p>
+            <p>Message: {state.data.message || 'No message'}</p>
+            <p>Last Updated: {state.lastUpdated ? new Date(state.lastUpdated).toLocaleTimeString() : 'Never'}</p>
+            <p>Last Updated By: {state.lastUpdatedBy || 'None'}</p>
+          </div>
+        </div>
       </div>
       
       {iframeHooks.map(({ config, hook }) => {

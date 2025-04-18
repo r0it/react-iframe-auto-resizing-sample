@@ -37,6 +37,7 @@ interface UseIframeResizeReturn {
   handleIframeResize: (height: number) => void;
   sendMessage: (message: Omit<DataMessage | ActionMessage, 'channelId'>) => void;
   onMessage: (callback: (message: DataMessage | ActionMessage) => void) => () => void;
+  broadcast: (message: Omit<DataMessage | ActionMessage, 'channelId'>) => void;
 }
 
 /**
@@ -52,6 +53,7 @@ const useIframeResize = (props: UseIframeResizeProps): UseIframeResizeReturn => 
   const [iframeHeight, setIframeHeight] = useState(defaultHeight);
   const [loading, setLoading] = useState(true);
   const messageCallbacks = useRef<((message: DataMessage | ActionMessage) => void)[]>([]);
+  const broadcastChannel = useRef<BroadcastChannel | null>(null);
 
   // Handle iframe resize
   const handleIframeResize = useCallback((height: number) => {
@@ -109,13 +111,43 @@ const useIframeResize = (props: UseIframeResizeProps): UseIframeResizeReturn => 
     }
   }, [url, handleIframeResize, props.channelId]);
 
-  // Set up and clean up event listener
+  // Set up and clean up event listeners
   useEffect(() => {
+    const handleBroadcastMessage = (event: MessageEvent) => {
+      try {
+        const data = event.data as IframeMessage;
+        if (data.type === 'data' || data.type === 'action') {
+          messageCallbacks.current.forEach(callback => callback(data));
+        }
+      } catch (error) {
+        console.error('Error processing broadcast message:', error);
+      }
+    };
+
+    // Set up BroadcastChannel if channelId is provided
+    if (channelId) {
+      broadcastChannel.current = new BroadcastChannel(channelId);
+      broadcastChannel.current.addEventListener('message', handleBroadcastMessage);
+    }
+
     window.addEventListener('message', handleMessage);
+    
     return () => {
       window.removeEventListener('message', handleMessage);
+      if (broadcastChannel.current) {
+        broadcastChannel.current.removeEventListener('message', handleBroadcastMessage);
+        broadcastChannel.current.close();
+      }
     };
-  }, [handleMessage]);
+  }, [handleMessage, channelId]);
+
+  // Broadcast message to all iframes
+  const broadcast = useCallback((message: Omit<DataMessage | ActionMessage, 'channelId'>) => {
+    if (broadcastChannel.current) {
+      const fullMessage = { ...message, channelId };
+      broadcastChannel.current.postMessage(fullMessage);
+    }
+  }, [channelId]);
 
   return {
     iframeRef: iframeRef as React.RefObject<HTMLIFrameElement>,
@@ -123,7 +155,8 @@ const useIframeResize = (props: UseIframeResizeProps): UseIframeResizeReturn => 
     loading,
     handleIframeResize,
     sendMessage,
-    onMessage
+    onMessage,
+    broadcast
   };
 };
 
